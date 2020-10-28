@@ -1,0 +1,241 @@
+camera poses
+---
+img_name: ./.tmp/calibrated_image_0.jpg
+rotation:
+  -
+    - 0.096879527
+    - 0.0446048789
+    - 0.0661094636
+translation:
+  -
+    - -41.3866577
+    - -76.7381287
+    - 204.191681
+---
+img_name: ./.tmp/calibrated_image_1.jpg
+rotation:
+  -
+    - 0.0632747188
+    - -0.0554758459
+    - 0.00238014827
+translation:
+  -
+    - -110.915573
+    - -68.1780701
+    - 157.487122
+---
+img_name: ./.tmp/calibrated_image_2.jpg
+rotation:
+  -
+    - 0.058317706
+    - 0.149164349
+    - 0.0262953024
+translation:
+  -
+    - -116.626129
+    - -66.557312
+    - 154.610504
+---
+img_name: ./.tmp/calibrated_image_3.jpg
+rotation:
+  -
+    - -0.319273949
+    - 0.134762913
+    - 0.195476711
+translation:
+  -
+    - -71.2362823
+    - -100.337967
+    - 192.281219
+---
+img_name: ./.tmp/calibrated_image_4.jpg
+rotation:
+  -
+    - -0.251854509
+    - 0.129592553
+    - 0.181209773
+translation:
+  -
+    - -61.202198
+    - -98.1759415
+    - 194.860016
+---
+img_name: ./.tmp/calibrated_image_5.jpg
+rotation:
+  -
+    - -0.417997777
+    - 0.0546851121
+    - 0.150721937
+translation:
+  -
+    - -54.7529678
+    - -88.6502533
+    - 181.208694
+---
+img_name: ./.tmp/calibrated_image_6.jpg
+rotation:
+  -
+    - 0.364064634
+    - -0.312085003
+    - -0.0291766375
+translation:
+  -
+    - -39.1915054
+    - -61.757164
+    - 151.028809
+---
+img_name: ./.tmp/calibrated_image_7.jpg
+rotation:
+  -
+    - -0.149112344
+    - -0.267251372
+    - 0.10916356
+translation:
+  -
+    - -48.4061546
+    - -107.00309
+    - 196.162125
+---
+img_name: ./.tmp/calibrated_image_8.jpg
+rotation:
+  -
+    - -0.325831681
+    - 0.0306747761
+    - 0.0847903937
+translation:
+  -
+    - -57.8200684
+    - -79.2405624
+    - 199.656616
+---
+img_name: ./.tmp/calibrated_image_9.jpg
+rotation:
+  -
+    - 0.0840739086
+    - -0.183542013
+    - -0.0226287134
+translation:
+  -
+    - -66.3479919
+    - -62.0761261
+    - 155.428482
+---
+img_name: ./.tmp/calibrated_image_10.jpg
+rotation:
+  -
+    - 0.342376232
+    - 0.0594034083
+    - 0.0254237819
+translation:
+  -
+    - -67.7013702
+    - -48.855278
+    - 161.458344
+---
+img_name: ./.tmp/calibrated_image_11.jpg
+rotation:
+  -
+    - 0.198853046
+    - 0.349083811
+    - 0.0981913656
+translation:
+  -
+    - -63.5319595
+    - -70.014946
+    - 198.820007
+---
+img_name: ./.tmp/calibrated_image_12.jpg
+rotation:
+  -
+    - 0.168654501
+    - -0.346870601
+    - 0.0971788689
+translation:
+  -
+    - -35.4247627
+    - -75.4827271
+    - 135.202209
+---
+img_name: ./.tmp/calibrated_image_13.jpg
+rotation:
+  -
+    - -0.236567751
+    - 0.100178875
+    - 0.137036294
+translation:
+  -
+    - -34.7155457
+    - -101.224899
+    - 197.674622
+---
+img_name: ./.tmp/calibrated_image_14.jpg
+rotation:
+  -
+    - 0.11594408
+    - 0.0454886444
+    - 0.0545145869
+translation:
+  -
+    - -44.5276299
+    - -70.135994
+    - 156.268021
+---
+img_name: ./.tmp/calibrated_image_15.jpg
+rotation:
+  -
+    - -0.0362150185
+    - -0.00410872046
+    - 0.0219161548
+translation:
+  -
+    - -63.4529419
+    - -74.5517349
+    - 173.054672
+---
+img_name: ./.tmp/calibrated_image_16.jpg
+rotation:
+  -
+    - 0.444838226
+    - -0.135496944
+    - -0.044273749
+translation:
+  -
+    - -42.7135353
+    - -41.1069679
+    - 155.515015
+---
+img_name: ./.tmp/calibrated_image_17.jpg
+rotation:
+  -
+    - -0.0354793817
+    - -0.0338785313
+    - -0.0214741379
+translation:
+  -
+    - -120.661407
+    - -15.4441776
+    - 176.594147
+---
+img_name: ./.tmp/calibrated_image_18.jpg
+rotation:
+  -
+    - 0.0844207555
+    - 0.0494161956
+    - 0.0471733548
+translation:
+  -
+    - -16.5365963
+    - -89.5042801
+    - 142.013626
+---
+img_name: ./.tmp/calibrated_image_19.jpg
+rotation:
+  -
+    - -0.389616191
+    - 0.0818063021
+    - 0.0578136295
+translation:
+  -
+    - -44.8289261
+    - -68.6248322
+    - 209.254822

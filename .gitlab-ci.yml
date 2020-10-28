@@ -1,0 +1,50 @@
+
+image: adnrv/opencv:latest
+
+
+before_script:
+  - apt-get update -y
+  - apt-get install doxygen -y
+  # - apt-get install libvtk7-dev
+  # - apt-get install libvtk7-qt-dev
+  - apt-get install libpcl-dev -f -y
+
+cache:
+  paths:
+  - features/
+
+stages:
+  - Build
+  - Tests
+  - Documentation  
+
+build_araslam:
+  stage: Build
+  script:
+    - mkdir -p build
+    - cd build
+    - cmake ..
+    - make
+
+run_doxygen:
+  stage: Documentation
+  script:
+    - doxygen
+  artifacts:
+    paths:
+    - doxygen_docs
+    expire_in: 1 week
+
+run_gtests:
+  stage: Tests
+  script:
+    - ./build/tests/araslam_tests
+
+# automated_tests:
+#   stage: Drop 1 Tests
+#   script:
+#     # - ./node_modules/.bin/cucumber-js -f json:reports/latest_report.json
+#     - chmod +x export_env_vars.sh
+#     - ./export_env_vars.sh
+#     - npm test
+#   allow_failure: true
