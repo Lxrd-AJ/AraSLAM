@@ -16,6 +16,10 @@ pub fn test_module_system() {
 	data::kitti::hello_world();
 }
 
+pub fn test_new_tsukuba_ds() {
+	let _e = data::new_tsukuba::Lighting::Daylight;
+}
+
 pub fn show_window() -> opencv::Result<()> {
 	let window = "Video Capture";
 	highgui::named_window(window,1)?;

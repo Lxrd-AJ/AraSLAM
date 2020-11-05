@@ -18,3 +18,9 @@ fn show_window() {
 	let _res = ara_slam::show_window();
 	assert_eq!(true, true);
 }
+
+#[test]
+fn test_new_tsukuba() {
+	let e = ara_slam::data::new_tsukuba::Lighting::Daylight;
+	assert_eq!(1,1);
+}

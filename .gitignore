@@ -4,7 +4,7 @@ tools/world_tree/node_modules
 .vscode
 data/data_odometry_gray
 data/drive_3.MOV
-data/NewTsukubaStereoDataset
+datasets/NewTsukubaStereoDataset
 promo/depth_point_cloud_kitti.mov
 promo/wide_depth_point_cloud_kitti_2.mov
 promo/all_with_inliers.mov
