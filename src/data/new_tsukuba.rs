@@ -17,11 +17,12 @@ pub enum Lighting{
 }
 
 pub struct NewTsukubaDataset {
-	pub local_url: String,
-	pub data_type: Lighting,
+	// pub local_url: String,
+	// pub data_type: Lighting,
 
 	left_images: Vec<String>,
-	right_images: Vec<String>
+	right_images: Vec<String>,
+	camera_tracks: Vec<String>
 }
 
 impl NewTsukubaDataset {
@@ -61,9 +62,11 @@ impl NewTsukubaDataset {
 
 		assert_eq!(right.len(), left.len(), "Stereo pairs must be the same length");
 
+		let tracks = parse_camera_track(local_url);
+
 		return NewTsukubaDataset { 
-			local_url: local_url.to_string(), data_type: data_type, 
-			left_images: left, right_images: right
+			// local_url: local_url.to_string(), data_type: data_type, 
+			left_images: left, right_images: right, camera_tracks: tracks
 		};
 	}
 
@@ -78,10 +81,6 @@ impl NewTsukubaDataset {
 		
 		(left,right)
 	}
-}
-
-impl NewTsukubaDataset {
-	fn parse_camera_track(&self) {}
 }
 
 impl super::DataLoader for NewTsukubaDataset {
@@ -101,4 +100,18 @@ fn lighting_to_str(light_type: &Lighting) -> String {
 		Lighting::Fluorescent => "fluorescent".to_string(),
 		Lighting::Lamps => "lamps".to_string()
 	}
+}
+
+/**
+	Ground truth position of the stereo camera 
+	(relative to the middle point of the stereo camera's baseline). 
+	1800 poses (one for each frame). Each line contain
+	6 float values: X Y Z A B C. Where (X, Y, Z) is the 3D position of the
+	camera nad (A, B, C) are the Euler angles (in degrees) that represent
+	the camera orientation.
+ */
+fn parse_camera_track(local_url: &String) -> Vec<String> {
+	let track_url = &format!("{}/camera_track.txt",local_url);
+	let contents = fs::read_to_string(path::Path::new(track_url)).expect("camera_track.txt not found");
+	return contents.lines().map(|l| l.to_owned()).collect::<Vec<String>>();
 }

@@ -10,6 +10,8 @@ edition = "2018"
 opencv = {version = "0.46", features = ["contrib"]}
 rand = "0.7"
 alphanumeric-sort = "1.4.0"
+kiss3d = "0.27"
+nalgebra = "0.23.0"
 
 [[example]]
 name = "show_window"
@@ -17,3 +19,9 @@ path = "examples/edo_tensei/show_window.rs"
 [[example]]
 name = "mono_vo"
 path = "examples/mono_vo.rs"
+[[example]]
+name = "cube"
+path = "examples/kiss3d/cube.rs"
+[[example]]
+name = "pcl"
+path = "examples/kiss3d/point_cloud.rs"
