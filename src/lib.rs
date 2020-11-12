@@ -1,3 +1,4 @@
+extern crate opencv;
 
 use opencv::{
 	prelude::*,
@@ -8,6 +9,67 @@ use opencv::{
 
 pub mod data;
 pub mod features;
+pub mod visualisation;
+pub mod camera;
+
+
+type KeyPoints = opencv::types::VectorOfKeyPoint;
+
+pub enum OdometryStatus {
+	Limbo,
+	Initialising,
+	Tracking,
+	Lost
+}
+
+pub struct VisualOdometer {
+	tracked_points: Vec<KeyPoints>,
+	status: OdometryStatus,
+	reference_frame: core::Mat,
+	camera_params: camera::Camera,
+	camera_tracks: Vec<i32> //TODO: Replace i32 with the 1x6 matrix representing camera translation and rot
+}
+
+impl VisualOdometer {
+	pub fn new() -> VisualOdometer {
+		VisualOdometer {
+			tracked_points: Vec::new(),
+			status: OdometryStatus::Limbo,
+			reference_frame: core::Mat::default().unwrap(),
+			camera_params: camera::Camera::new(),
+			camera_tracks: vec![0,1,2,3]
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -2,6 +2,7 @@ use std::fs;
 use std::path;
 
 use crate::data::DataLoader;
+use crate::camera;
 
 use rand::seq::SliceRandom;
 use opencv::{core, imgcodecs, highgui, prelude::*};
@@ -80,6 +81,15 @@ impl NewTsukubaDataset {
 								.expect("Error reading right image");
 		
 		(left,right)
+	}
+
+	pub fn camera_params(&self) -> camera::Camera {
+		let focal_length = (615.0, 615.0);
+		let pxpy = (320.0, 240.0);
+		let k = camera::Intrinsic::from(focal_length, pxpy);
+		let img_size = (480, 640);
+		let camera = camera::Camera::new_from(k, img_size);
+		return camera;
 	}
 }
 
