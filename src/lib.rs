@@ -1,4 +1,7 @@
 extern crate opencv;
+extern crate nalgebra as na;
+
+use std::collections::HashMap;
 
 use opencv::{
 	prelude::*,
@@ -6,6 +9,7 @@ use opencv::{
 	highgui,
 	videoio
 };
+use na::{MatrixMN, U1, U6};
 
 pub mod data;
 pub mod features;
@@ -14,6 +18,10 @@ pub mod camera;
 
 
 type KeyPoints = opencv::types::VectorOfKeyPoint;
+type Features = opencv::types::VectorOfKeyPoint; //TODO: Change this to the right representation
+type Matrix1x3 = MatrixMN<f32, U1, U6>;
+type StereoPair = (core::Mat, core::Mat);
+type FrameID = i32;
 
 pub enum OdometryStatus {
 	Limbo,
@@ -22,8 +30,25 @@ pub enum OdometryStatus {
 	Lost
 }
 
+struct Pose {
+	rotation: Matrix1x3,
+	translation: Matrix1x3
+}
+
+#[derive(Clone)]
+struct Frame {
+	id: FrameID,
+	absolute_pose: Pose,
+	points: KeyPoints,
+	features: Features
+}
+
+/// Handles connections between two frames `Frame`
+struct Connection {}
+
 pub struct VisualOdometer {
-	tracked_points: Vec<KeyPoints>,
+	frames: Vec<Frame>,
+	connections: HashMap<(FrameID, FrameID), Connection>,
 	status: OdometryStatus,
 	reference_frame: core::Mat,
 	camera_params: camera::Camera,
@@ -31,16 +56,94 @@ pub struct VisualOdometer {
 }
 
 impl VisualOdometer {
+
 	pub fn new() -> VisualOdometer {
 		VisualOdometer {
-			tracked_points: Vec::new(),
+			frames: Vec::new(),
+			connections: HashMap::new(),
 			status: OdometryStatus::Limbo,
 			reference_frame: core::Mat::default().unwrap(),
 			camera_params: camera::Camera::new(),
-			camera_tracks: vec![0,1,2,3]
+			camera_tracks: Vec::new()
 		}
 	}
+
+	// Initialises the odometer and returns the total number of frames read
+	/// Calculates the relative pose between the first frame and the second frame
+	/// If the calculation fails, then the next image or the one after that is used until
+	/// a successful pose is calculated.
+	pub fn initialise(&mut self, using: &mut impl data::DataLoader<Item=StereoPair> ) -> usize{
+		let dataset = using;
+		let mut amount_read = 0;
+
+		let (first_image, _) = dataset.next().unwrap();
+		let (kps1, desc1) = features::detect_features(&first_image, features::Detector::SURF);
+		self.status = OdometryStatus::Initialising;
+
+		for (idx, (left, _)) in dataset.enumerate() {
+			let (kpsn, descn) = features::detect_features(&left, features::Detector::SURF);
+			let matches = features::detect_matches(&desc1, &descn);
+			amount_read += 1;
+			println!("Dataset index {}", idx);
+
+			//-- Draw the matches
+			let mut drawn_matches = core::Mat::default().unwrap();
+			let color = core::Scalar::all(-1f64);
+			let flag = opencv::features2d::DrawMatchesFlags::DEFAULT;
+			let _x = opencv::features2d::draw_matches(&left, &kps1, &left, &kpsn, &matches, &drawn_matches,
+				color, color, &core::no_array().unwrap(), flag);
+			highgui::named_window("MATCHES", highgui::WINDOW_GUI_NORMAL).unwrap();
+			highgui::imshow("MATCHES", drawn_matches);
+			highgui::wait_key(10);
+
+			//-- Compute pose relative to first frame
+		}
+
+		amount_read
+	}
+
+	// pub fn initialise(&self, using: &mut impl data::StereoDataLoader<core::Mat, Item=StereoPair> ) -> usize{
+	// 	let dataset = using;
+	// 	let mut amount_read = 0;
+
+	// 	let (l,r) = dataset.next().unwrap();
+
+	// 	for img in dataset {
+	// 		amount_read += 1;
+	// 	}
+
+	// 	amount_read
+	// }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

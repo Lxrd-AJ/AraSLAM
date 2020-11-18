@@ -23,7 +23,8 @@ pub struct NewTsukubaDataset {
 
 	left_images: Vec<String>,
 	right_images: Vec<String>,
-	camera_tracks: Vec<String>
+	camera_tracks: Vec<String>,
+	read_idx: usize
 }
 
 impl NewTsukubaDataset {
@@ -67,21 +68,11 @@ impl NewTsukubaDataset {
 
 		return NewTsukubaDataset { 
 			// local_url: local_url.to_string(), data_type: data_type, 
-			left_images: left, right_images: right, camera_tracks: tracks
+			left_images: left, right_images: right, camera_tracks: tracks, read_idx: 0
 		};
 	}
 
-	/// Read the pair of stereo images at the specified index `idx`
-	pub fn read(&self, idx: usize) -> (core::Mat, core::Mat) {
-		assert!((idx < self.length()), "{} should be between 0 and {}", idx, self.length());
-		let read_flag = imgcodecs::IMREAD_COLOR;
-		let left = imgcodecs::imread(&self.left_images[idx], read_flag)
-								.expect("Error reading left image");
-		let right = imgcodecs::imread(&self.right_images[idx], read_flag)
-								.expect("Error reading right image");
-		
-		(left,right)
-	}
+	
 
 	pub fn camera_params(&self) -> camera::Camera {
 		let focal_length = (615.0, 615.0);
@@ -100,6 +91,48 @@ impl super::DataLoader for NewTsukubaDataset {
 
 	fn download_url(&self) -> String {
 		return String::from("https://home.cvlab.cs.tsukuba.ac.jp/dataset");
+	}
+}
+
+type StereoPair = (core::Mat, core::Mat);
+impl super::StereoDataLoader<core::Mat> for NewTsukubaDataset {
+	/// Read the pair of stereo images at the specified index `idx`
+	fn read(&self, idx: usize) -> StereoPair {
+		assert!((idx < self.length()), "{} should be between 0 and {}", idx, self.length());
+		let read_flag = imgcodecs::IMREAD_COLOR;
+		let left = imgcodecs::imread(&self.left_images[idx], read_flag)
+								.expect("Error reading left image");
+		let right = imgcodecs::imread(&self.right_images[idx], read_flag)
+								.expect("Error reading right image");
+		
+		(left,right)
+	}
+}
+
+impl super::MonocularDataLoader<core::Mat> for NewTsukubaDataset {
+	/// Read the pair of stereo images at the specified index `idx`
+	fn read(&self, idx: usize) -> core::Mat {
+		assert!((idx < self.length()), "{} should be between 0 and {}", idx, self.length());
+		let read_flag = imgcodecs::IMREAD_COLOR;
+		let left = imgcodecs::imread(&self.left_images[idx], read_flag)
+								.expect("Error reading left image");
+		left
+	}
+}
+
+impl Iterator for NewTsukubaDataset {
+	type Item = StereoPair;
+	
+	fn next(&mut self) -> Option<Self::Item> {
+		use crate::data::StereoDataLoader;
+
+		if self.read_idx > self.length() {
+			return None;
+		}else {
+			let data = self.read(self.read_idx);
+			self.read_idx += 1;
+			return Some(data);
+		}
 	}
 }
 
