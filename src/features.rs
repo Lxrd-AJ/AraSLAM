@@ -27,7 +27,8 @@ pub fn detect_features(image: &core::Mat, _method: Detector) -> KeyPointDescript
 }
 
 /// Compares the two descriptors using a FLANN based matcher with `k=2` nearest
-/// neighbours and uses a threshold of `0.7` to filter the k neighbours	
+/// neighbours and uses a threshold of `0.7` to filter the k neighbours.
+/// Returns at most 200 matches or less.
 pub fn detect_matches( desc1: &Descriptor, desc2: &Descriptor ) -> Matches {
 	let matcher = features2d::FlannBasedMatcher::create().unwrap();
 	// let index_params = opencv::flann::IndexParams::default().unwrap();
@@ -43,14 +44,20 @@ pub fn detect_matches( desc1: &Descriptor, desc2: &Descriptor ) -> Matches {
 	//-- 2: Filter the matches using Lowe's ratio test
 	let mut good_matches = Matches::new();
 	for kmatches in matches {
-		let k1 = kmatches.get(1).unwrap();
-		let k2 = kmatches.get(2).unwrap();
+		let k1 = kmatches.get(0).unwrap();
+		let k2 = kmatches.get(1).unwrap();
 
 		if k1.distance < (0.7 * k2.distance) {
 			good_matches.push(k1);
 		}
 	}
 
+	//-- 3: Take only the best 200 features or less
+	let num_feats: usize = if good_matches.len() > 200 { 200 as usize } else { good_matches.len() };
+	let mut vec_good = good_matches.to_vec();
+	vec_good.sort_by(|x,y| x.distance.partial_cmp(&y.distance).unwrap());
+	vec_good = vec_good[0..num_feats].to_vec();
+	good_matches = Matches::from(vec_good);
 	return good_matches;
 }
 

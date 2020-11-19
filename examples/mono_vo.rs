@@ -41,7 +41,7 @@ fn main() -> opencv::Result<()>{
 	highgui::imshow("Sample Image", &rand_img)?;
 
 	//Example showing how to detect keypoints
-	let kps = features::detect_features(&rand_img, features::Detector::SURF);
+	let (kps, desc) = features::detect_features(&rand_img, features::Detector::SURF);
 	let kps_image = features::draw_keypoints(&rand_img, &kps);
 	highgui::imshow("Sample Image", &kps_image)?;
 
@@ -62,7 +62,7 @@ fn main() -> opencv::Result<()>{
 	// 	viz::show_camera();
 	// });
 	
-	
+
 	// viz::show_camera();
 
 	// loop {

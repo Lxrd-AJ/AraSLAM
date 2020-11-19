@@ -35,8 +35,21 @@ pub fn render_cube() {
 	window.set_light(Light::StickToCamera);
 
 	let rot = UnitQuaternion::from_axis_angle(&Vector3::y_axis(), 0.014);
-	let state = AppState { obj: cam_object2, rot: rot };
+	
+	//different ways of rendering the window
 
-	window.render_loop(state);
+	//-- 1:
+	// let state = AppState { obj: cam_object2, rot: rot };
+	// window.render_loop(state);
+
+	//-- 2:
+	// while window.render() {
+	// 	cam_object2.prepend_to_local_rotation(&rot);
+	// 	let t = nalgebra::Translation3::new(1.0, 0.0, 0.0);
+	// 	cam_object2.prepend_to_local_translation(&t);
+	// }
+	
+	//-- 3:
+	// window.show();
 
 }
