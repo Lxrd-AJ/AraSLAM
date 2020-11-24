@@ -1,6 +1,7 @@
 mod camera;
 
 extern crate nalgebra as na;
+extern crate opencv;
 
 use na::{MatrixMN, U1, U3, U8};
 
@@ -33,6 +34,11 @@ impl Intrinsic {
 			internal_camera: K,
 			distortion: Matrix1x8::zeros()
 		}
+	}
+
+	/// returns an OpenCV matrix representing the camera intrinsic `K`
+	pub fn cv_mat(&self) -> opencv::core::Mat {
+		unimplemented!("Cannot convert to OpenCV matrix yet!");
 	}
 }
 

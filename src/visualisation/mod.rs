@@ -19,7 +19,7 @@ pub fn render_camera(trans: &Matrix1x3, rot: &Matrix1x3) -> Window {
 	let t = trans.translation3();
 	let r = rot.unit_quaternion();
 	let mut window = Window::new("AraSLAM: Odometry");
-	let camera_obj_file = path::Path::new("./datasets/GOPRO.obj");//TODO: Find a standard way to reference the file
+	let camera_obj_file = path::Path::new("./datasets/GOPRO.obj");//TODO: Find a standard way to reference the file e.g using `env!` macro
 	let camera_scale = Vector3::new(1.0, 1.0, 1.0);
 	let mut camera3d = window.add_obj(camera_obj_file, camera_obj_file, camera_scale);
 

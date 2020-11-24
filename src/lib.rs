@@ -15,9 +15,11 @@ pub mod data;
 pub mod features;
 pub mod visualisation;
 pub mod camera;
+mod geometry;
 
 
 type KeyPoints = opencv::types::VectorOfKeyPoint;
+type Points = opencv::types::VectorOfPoint2f;
 type Descriptor = core::Mat;
 type Matches = opencv::types::VectorOfDMatch;
 type Matrix1x3 = MatrixMN<f32, U1, U6>;
@@ -32,7 +34,7 @@ pub enum OdometryStatus {
 }
 
 #[derive(Clone)]
-struct Pose {
+pub struct Pose {
 	rotation: Matrix1x3,
 	translation: Matrix1x3
 }
@@ -43,6 +45,10 @@ impl Pose {
 			rotation: Matrix1x3::zeros(),
 			translation: Matrix1x3::zeros()
 		}
+	}
+
+	pub fn from(r: &core::Mat, t: &core::Mat) -> Pose {
+		unimplemented!("Pose from opencv:matrix not implemented yet");
 	}
 }
 
@@ -120,7 +126,9 @@ impl VisualOdometer {
 			highgui::imshow("MATCHES", &drawn_matches);
 			highgui::wait_key(10);
 
-			//-- 3: Compute pose relative to first frame
+			//-- 3: Compute pose of the current frame relative to first frame
+			let (p1, pn) = point_pairs( &kps1, &kpsn, &matches ); 
+			let pose = geometry::relative_pose(&p1, &pn, self.camera_params.intrinsic());
 
 			if amount_read > 20 {
 				break;
@@ -132,20 +140,36 @@ impl VisualOdometer {
 		amount_read
 	}
 
-	// pub fn initialise(&self, using: &mut impl data::StereoDataLoader<core::Mat, Item=StereoPair> ) -> usize{
-	// 	let dataset = using;
-	// 	let mut amount_read = 0;
-
-	// 	let (l,r) = dataset.next().unwrap();
-
-	// 	for img in dataset {
-	// 		amount_read += 1;
-	// 	}
-
-	// 	amount_read
-	// }
+	
 }
 
+/// Given the keypoints from each image and their point matches, the matches
+/// are used to filter the keypoints and an orderded pair of points are 
+/// returned
+fn point_pairs(kp1: &KeyPoints, kp2: &KeyPoints, matches: &Matches) -> (Points, Points) {
+	// let mut p1 = Points::new();
+	// let mut p2 = Points::new();
+
+	// for m in matches {
+	// 	let point1 = kp1.to_vec()[(m.query_idx as usize)].pt;
+	// 	let point2 = kp2.to_vec()[(m.train_idx as usize)].pt;
+		
+	// 	p1.push(point1);
+	// 	p2.push(point2);
+	// }
+
+	let p1 = matches
+		.to_vec().iter()
+		.map(|m| 
+			kp1.to_vec()[(m.query_idx as usize)].pt
+		).collect::<Points>();
+
+	let p2 = matches
+		.to_vec().iter()
+		.map(|m| kp2.to_vec()[(m.train_idx as usize)].pt).collect::<Points>();
+
+	return (p1, p2);
+}
 
 
 

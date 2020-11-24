@@ -31,7 +31,7 @@ fn main() -> opencv::Result<()>{
 	let rand_idx: usize = rand::thread_rng().gen_range(0, dataset.length());
 	let (rand_left, rand_right) = dataset.read(rand_idx);
 
-	println!("Image size ({},{})", rand_left.rows(), rand_left.cols());
+	println!("Image size ({}, {})", rand_left.rows(), rand_left.cols());
 	let mut rand_img = core::Mat::default()?;
 	let mut input_image: core::Vector<core::Mat> = core::Vector::new();
 	input_image.push(rand_left);
