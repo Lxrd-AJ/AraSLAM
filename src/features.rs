@@ -14,7 +14,7 @@ type VectorOfMatches = opencv::types::VectorOfVectorOfDMatch;
 #[allow(dead_code)]
 pub fn detect_features(image: &core::Mat, _method: Detector) -> KeyPointDescriptors {
 	// let mut detector = features2d::FAST(image, keypoints, threshold, nonmax_suppression);
-	let mut detector = xfeatures2d::SURF::create(100.0,4,3,false,false).unwrap();
+	let mut detector = xfeatures2d::SURF::create(500_f64, 3, 4, true, false).unwrap();
 	let mut kps = KeyPoints::new();
 	let mut fts = core::Mat::default().unwrap();
 	let mask = core::no_array().unwrap();//core::Mat::default().unwrap();
@@ -28,8 +28,8 @@ pub fn detect_features(image: &core::Mat, _method: Detector) -> KeyPointDescript
 
 /// Compares the two descriptors using a FLANN based matcher with `k=2` nearest
 /// neighbours and uses a threshold of `0.7` to filter the k neighbours.
-/// Returns at most 200 matches or less.
-pub fn detect_matches( desc1: &Descriptor, desc2: &Descriptor ) -> Matches {
+/// Returns at most `max_matches` matches or less.
+pub fn detect_matches( desc1: &Descriptor, desc2: &Descriptor, max_matches: usize ) -> Matches {
 	let matcher = features2d::FlannBasedMatcher::create().unwrap();
 	// let index_params = opencv::flann::IndexParams::default().unwrap();
 	// let search_params = opencv::flann::SearchParams::new(50, 0.1, true, true).unwrap();
@@ -37,10 +37,9 @@ pub fn detect_matches( desc1: &Descriptor, desc2: &Descriptor ) -> Matches {
 
 	//-- 1: Detect using a FLANN based matcher
 	let mut matches = VectorOfMatches::new();
-	let mask = core::no_array().unwrap();
-	// matcher.match(desc1, desc2, matches);
+	let mask = core::Mat::default().unwrap();//core::no_array().unwrap();
 	let _x = matcher.knn_train_match(desc1, desc2, &mut matches, 2, &mask, true);
-
+	
 	//-- 2: Filter the matches using Lowe's ratio test
 	let mut good_matches = Matches::new();
 	for kmatches in matches {
@@ -52,8 +51,8 @@ pub fn detect_matches( desc1: &Descriptor, desc2: &Descriptor ) -> Matches {
 		}
 	}
 
-	//-- 3: Take only the best 200 features or less
-	let num_feats: usize = if good_matches.len() > 200 { 200 as usize } else { good_matches.len() };
+	//-- 3: Take only the amount `max_matches` features or less
+	let num_feats: usize = if good_matches.len() > max_matches { max_matches } else { good_matches.len() };
 	let mut vec_good = good_matches.to_vec();
 	vec_good.sort_by(|x,y| x.distance.partial_cmp(&y.distance).unwrap());
 	vec_good = vec_good[0..num_feats].to_vec();

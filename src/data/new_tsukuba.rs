@@ -120,21 +120,21 @@ impl super::MonocularDataLoader<core::Mat> for NewTsukubaDataset {
 	}
 }
 
-impl Iterator for NewTsukubaDataset {
-	type Item = StereoPair;
+// impl Iterator for NewTsukubaDataset {
+// 	type Item = StereoPair;
 	
-	fn next(&mut self) -> Option<Self::Item> {
-		use crate::data::StereoDataLoader;
+// 	fn next(&mut self) -> Option<Self::Item> {
+// 		use crate::data::StereoDataLoader;
 
-		if self.read_idx > self.length() {
-			return None;
-		}else {
-			let data = self.read(self.read_idx);
-			self.read_idx += 1;
-			return Some(data);
-		}
-	}
-}
+// 		if self.read_idx > self.length() {
+// 			return None;
+// 		}else {
+// 			let data = self.read(self.read_idx);
+// 			self.read_idx += 1;
+// 			return Some(data);
+// 		}
+// 	}
+// }
 
 fn lighting_to_str(light_type: &Lighting) -> String {
 	match light_type {

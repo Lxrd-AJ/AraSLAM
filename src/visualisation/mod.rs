@@ -9,7 +9,7 @@ use kiss3d::light::Light;
 use kiss3d::scene::SceneNode;
 use std::path;
 
-type Matrix1x3 = MatrixMN<f32, U1, U6>;
+type Matrix1x3 = MatrixMN<f64, U1, U6>;
 
 pub fn show_camera() {
 	test_show_window::render_cube();

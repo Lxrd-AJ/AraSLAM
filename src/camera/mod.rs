@@ -4,6 +4,7 @@ extern crate nalgebra as na;
 extern crate opencv;
 
 use na::{MatrixMN, U1, U3, U8};
+use opencv::{prelude::*,core};
 
 type Matrix3x3 = MatrixMN<f64, U3, U3>;
 type Matrix1x8 = MatrixMN<f64, U1, U8>;
@@ -36,9 +37,22 @@ impl Intrinsic {
 		}
 	}
 
-	/// returns an OpenCV matrix representing the camera intrinsic `K`
-	pub fn cv_mat(&self) -> opencv::core::Mat {
-		unimplemented!("Cannot convert to OpenCV matrix yet!");
+	/// returns an OpenCV matrix representing the `internal_camera` intrinsic i.e `K`
+	pub fn cv_mat_k(&self) -> core::Mat {
+		let mut k: core::Mat = core::Mat::zeros(3, 3, f64::typ()).unwrap().to_mat().unwrap();
+		*k.at_2d_mut::<f64>(0,0).unwrap() = self.internal_camera[(0,0)];
+		*k.at_2d_mut::<f64>(0,1).unwrap() = self.internal_camera[(0,1)];
+		*k.at_2d_mut::<f64>(0,2).unwrap() = self.internal_camera[(0,2)];
+
+		*k.at_2d_mut::<f64>(1,0).unwrap() = self.internal_camera[(1,0)];
+		*k.at_2d_mut::<f64>(1,1).unwrap() = self.internal_camera[(1,1)];
+		*k.at_2d_mut::<f64>(1,2).unwrap() = self.internal_camera[(1,2)];
+
+		*k.at_2d_mut::<f64>(2,0).unwrap() = self.internal_camera[(2,0)];
+		*k.at_2d_mut::<f64>(2,1).unwrap() = self.internal_camera[(2,1)];
+		*k.at_2d_mut::<f64>(2,2).unwrap() = self.internal_camera[(2,2)];
+
+		k
 	}
 }
 
