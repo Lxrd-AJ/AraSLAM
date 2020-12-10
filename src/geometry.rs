@@ -17,12 +17,11 @@ pub fn relative_pose( p1: &Points, p2: &Points, k: Intrinsic) -> (Pose, Points, 
 			opencv::calib3d::RANSAC, 0.99, 1.0, 
 			&mut inliers
 		).unwrap();
-	println!("Essential matrix:\n{:?}", essential.to_vec_2d::<f64>().unwrap());
+	
 	let mut rotation = core::Mat::default().unwrap(); //3x3 matrix
 	let mut translation = core::Mat::default().unwrap(); //1x3 matrix
 	let _x = calib3d::recover_pose_camera(&essential, &p1, &p2, &k.cv_mat_k(), 
 		&mut rotation, &mut translation, &mut inliers);
-	println!("{:?}\n{:?}", rotation.to_vec_2d::<f64>().unwrap(), translation.to_vec_2d::<f64>().unwrap());
 	let pose = Pose::from(&rotation, &translation);
 
 	// `inliers` is now a Nx1 matrix of 1s and 0s depending representing epipolar inlier points

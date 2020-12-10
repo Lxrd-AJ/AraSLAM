@@ -1,5 +1,6 @@
 extern crate opencv;
 extern crate nalgebra as na;
+extern crate itertools;
 
 use std::collections::HashMap;
 
@@ -10,6 +11,7 @@ use opencv::{
 	videoio
 };
 use na::{MatrixMN, U1, U3};
+use itertools::izip;
 
 pub mod data;
 pub mod features;
@@ -27,6 +29,7 @@ type Matrix3x3 = MatrixMN<f64, U3, U3>;
 type StereoPair = (core::Mat, core::Mat);
 type FrameID = i32;
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum OdometryStatus {
 	Limbo,
 	Initialising,
@@ -35,7 +38,7 @@ pub enum OdometryStatus {
 	Lost
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub struct Pose {
 	rotation: Matrix3x3,
 	translation: Matrix1x3
@@ -44,7 +47,7 @@ pub struct Pose {
 impl Pose {
 	pub fn new() -> Pose {
 		Pose {
-			rotation: Matrix3x3::zeros(),
+			rotation: Matrix3x3::identity(),
 			translation: Matrix1x3::zeros()
 		}
 	}
@@ -76,6 +79,14 @@ impl Pose {
 			translation: tv
 		}
 	}
+
+	pub fn rotation(&self) -> &Matrix3x3 {
+		&self.rotation
+	}
+
+	pub fn translation(&self) -> &Matrix1x3 {
+		&self.translation
+	}
 }
 
 #[derive(Clone)]
@@ -95,7 +106,7 @@ struct Connection {
 pub struct VisualOdometer {
 	frames: Vec<Frame>,
 	connections: HashMap<(FrameID, FrameID), Connection>, // (prev, cur) represents the keys
-	status: OdometryStatus,
+	pub status: OdometryStatus,
 	reference_frame: core::Mat,
 	camera_params: camera::Camera,
 	camera_tracks: Vec<i32> //TODO: Replace i32 with the 1x6 matrix representing camera translation and rot
@@ -114,7 +125,7 @@ impl VisualOdometer {
 		}
 	}
 
-	// Initialises the odometer and returns the total number of frames read
+	/// Initialises the odometer and returns the total number of frames read
 	/// Calculates the relative pose between the first frame and the second frame
 	/// If the calculation fails, then the next image or the one after that is used until
 	/// a successful pose is calculated.
@@ -149,31 +160,33 @@ impl VisualOdometer {
 			let _x = opencv::features2d::draw_matches(&first_image, &kps1, &left, &kpsn, &matches, &mut drawn_matches,
 				match_color, color, &mask, flag);
 			highgui::named_window("MATCHES", highgui::WINDOW_GUI_NORMAL).unwrap();
-			highgui::imshow("MATCHES", &drawn_matches);
+			let _x = highgui::imshow("MATCHES", &drawn_matches);
 
 			//-- 3: Compute pose of the current frame relative to first frame using the matched features
 			let (p1, pn) = point_pairs( &kps1, &kpsn, &matches ); 
 			let (pose, p1, p2) = geometry::relative_pose(&p1, &pn, self.camera_params.intrinsic());
 			let frame_n = Frame { id: (idx as i32), pose: pose, points: kpsn.clone(), descriptors: descn.clone() };
 			self.frames.push(frame_n);
-			println!("Inliers: pruned from {} to {}", matches.len(), p1.len());
 
 			//-- 4: Add a connection between these two frames and finish initialisation
 			let conn = Connection{ points1: p1, points2: p2 };
 			self.connections.insert((0,(idx as i32)), conn);
-			self.status = OdometryStatus::Initialised;
 
 
 			// For now there is no efficient way to determine if the pose calculation failed.
 			// so assume it worked correctly and exit initialisation given that we have found a pose relative
 			// to the first frame
+			self.status = OdometryStatus::Initialised;
 			break;
 		}
 
 		amount_read
 	}
 
-	
+	/// Returns the pose for every frame seen by the odometer
+	pub fn poses(&self) -> Vec<Pose> {
+		self.frames.iter().map(|frame| frame.pose).collect()
+	}
 }
 
 /// Given the keypoints from each image and their point matches, the matches
@@ -205,7 +218,29 @@ fn point_pairs(kp1: &KeyPoints, kp2: &KeyPoints, matches: &Matches) -> (Points, 
 }
 
 
+/// Computes the scale factor from `true_translations` and uses that to normalise
+/// the poses
+pub fn normalise(poses: &Vec<Pose>, true_translations: &Vec<Matrix1x3>) -> Vec<Pose> {
+	// move the cameras to the origins
+	let first_pose = poses[0];
+	let poses: Vec<Pose> = poses.iter()
+				.map(|p| Pose { rotation: *p.rotation(), translation: p.translation() - first_pose.translation()})
+				.collect();
+	let gt_poses: Vec<Matrix1x3> = true_translations.iter().take(poses.len()).map(|x| *x).collect();
+	let pose_magnitudes: Vec<f64> = poses.iter().map(|p| p.translation().norm() as f64).collect();// L2 norms
+	let gt_magnitudes: Vec<f64> = gt_poses.iter().map(|gt| gt.norm() as f64).collect();
+	let mut possible_scale_factors: Vec<f64> = Vec::new();
+	for (x,y) in izip!(&gt_magnitudes[1..], &pose_magnitudes[1..]) {
+		possible_scale_factors.push(x/y);
+	}
 
+	let scale_factor = possible_scale_factors.pop().unwrap(); //TODO: Use the median of the list instead
+	let updated_poses: Vec<Pose> = poses.iter()
+				.map(|p| 
+					Pose { rotation: p.rotation() * first_pose.rotation(), translation: p.translation() * scale_factor})
+				.collect();
+	return updated_poses;
+}
 
 
 

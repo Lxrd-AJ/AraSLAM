@@ -12,6 +12,7 @@ rand = "0.7"
 alphanumeric-sort = "1.4.0"
 kiss3d = "0.27"
 nalgebra = "0.23.0"
+itertools = "0.9"
 
 [[example]]
 name = "show_window"

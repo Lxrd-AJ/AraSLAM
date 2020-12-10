@@ -3,25 +3,30 @@ extern crate opencv;
 extern crate nalgebra as na;
 extern crate rand;
 
-use ara_slam::data::new_tsukuba;
+use ara_slam::{data::new_tsukuba, OdometryStatus, normalise};
 
 use opencv::{highgui, prelude::*};
+use na::{MatrixMN, U1, U3};
 
-/*
-*	- [ ] So far many of the objects have been defined as mutable, i need to find a way to reduce this
-*/
+type Matrix1x3 = MatrixMN<f64, U1, U3>;
+
+
 fn main() -> opencv::Result<()>{
 	let dataset_url = String::from("./datasets/NewTsukubaStereoDataset");
 	let mut dataset = new_tsukuba::NewTsukubaDataset::new(&dataset_url, new_tsukuba::Lighting::Daylight);
 	
 	let mut odometer = ara_slam::VisualOdometer::new();
 	let amount_read = odometer.initialise(&mut dataset);
-
+	assert_eq!(odometer.status, OdometryStatus::Initialised, "The odometer is not initialised");
 	println!("Initialised odometry from the first {} frames", amount_read);
+
+	let odometer_poses = odometer.poses();
+	let gt_translations: Vec<Matrix1x3> = dataset.poses().into_iter().map(|p| *p.translation()).collect();
+	let updated_odometer_poses = normalise(&odometer_poses, &gt_translations);
 
 	loop {
 		if highgui::wait_key(10)? > 0 {
-			highgui::destroy_all_windows();
+			let _x = highgui::destroy_all_windows();
 			break;
 		}
 	}

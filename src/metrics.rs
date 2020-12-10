@@ -1,0 +1,1 @@
+// https://vision.in.tum.de/data/datasets/rgbd-dataset/tools#:~:text=Absolute%20Trajectory%20Error%20(ATE),truth%20poses%20using%20the%20timestamps.

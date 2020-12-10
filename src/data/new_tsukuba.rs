@@ -1,13 +1,19 @@
+extern crate alphanumeric_sort;
+extern crate nalgebra as na;
+
 use std::fs;
 use std::path;
 
 use crate::data::DataLoader;
 use crate::camera;
+use crate::Pose;
 
 use rand::seq::SliceRandom;
 use opencv::{core, imgcodecs, highgui, prelude::*};
+use na::{MatrixMN, U1, U3};
 
-extern crate alphanumeric_sort;
+type Matrix1x3 = MatrixMN<f64, U1, U3>;
+type Matrix3x3 = MatrixMN<f64, U3, U3>;
 
 /// Used to determine which of the 4 folders to load
 pub enum Lighting{
@@ -82,6 +88,28 @@ impl NewTsukubaDataset {
 		let camera = camera::Camera::new_from(k, img_size);
 		return camera;
 	}
+
+	pub fn poses(&self) -> Vec<Pose> {
+		let mut result: Vec<Pose> = Vec::new();
+		let tracks = &self.camera_tracks[..];
+
+		for line in tracks{
+			let p: Vec<f64> = line.split(",")
+						.map(|e| e.trim())
+						.map(|e| e.parse::<f64>().unwrap()).collect();
+			let mut tv = Matrix1x3::zeros();
+			tv[(0,0)] = p[0];
+			tv[(0,1)] = p[1];
+			tv[(0,2)] = p[2];
+
+			let rm = *na::Rotation3::from_euler_angles(p[3], p[4], p[5]).matrix();
+			let pose = Pose { rotation: rm, translation: tv };
+			
+			result.push(pose);
+		}
+		
+		result
+	}
 }
 
 impl super::DataLoader for NewTsukubaDataset {
@@ -120,21 +148,6 @@ impl super::MonocularDataLoader<core::Mat> for NewTsukubaDataset {
 	}
 }
 
-// impl Iterator for NewTsukubaDataset {
-// 	type Item = StereoPair;
-	
-// 	fn next(&mut self) -> Option<Self::Item> {
-// 		use crate::data::StereoDataLoader;
-
-// 		if self.read_idx > self.length() {
-// 			return None;
-// 		}else {
-// 			let data = self.read(self.read_idx);
-// 			self.read_idx += 1;
-// 			return Some(data);
-// 		}
-// 	}
-// }
 
 fn lighting_to_str(light_type: &Lighting) -> String {
 	match light_type {
@@ -157,4 +170,20 @@ fn parse_camera_track(local_url: &String) -> Vec<String> {
 	let track_url = &format!("{}/camera_track.txt",local_url);
 	let contents = fs::read_to_string(path::Path::new(track_url)).expect("camera_track.txt not found");
 	return contents.lines().map(|l| l.to_owned()).collect::<Vec<String>>();
+}
+
+
+
+
+#[cfg(test)]
+mod tests {
+	use super::{NewTsukubaDataset, Lighting};
+	#[test]
+	fn verify_length_poses() {
+		let dataset_url = String::from("./datasets/NewTsukubaStereoDataset");
+		let dataloader = NewTsukubaDataset::new(&dataset_url, Lighting::Daylight);
+
+		let poses = dataloader.poses();
+		assert_eq!( poses.len(), 1800, "Length of camera tracks are equal");
+	}
 }
