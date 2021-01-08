@@ -26,7 +26,7 @@ type Descriptor = core::Mat;
 type Matches = opencv::types::VectorOfDMatch;
 type Matrix1x3 = MatrixMN<f64, U1, U3>;
 type Matrix3x3 = MatrixMN<f64, U3, U3>;
-type StereoPair = (core::Mat, core::Mat);
+// type StereoPair = (core::Mat, core::Mat);
 type FrameID = i32;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -137,7 +137,6 @@ impl VisualOdometer {
 		let first_image = dataset.read(0);
 		let (kps1, desc1) = features::detect_features(&first_image, features::Detector::SURF);
 		let first_frame = Frame { id: 0, pose: Pose::new(), points: kps1.clone(), descriptors: desc1.clone() };
-		let first_frame_c = first_frame.clone();
 
 		self.frames.push(first_frame);
 		self.status = OdometryStatus::Initialising;
@@ -149,18 +148,6 @@ impl VisualOdometer {
 			let (kpsn, descn) = features::detect_features(&left, features::Detector::SURF);
 			let matches = features::detect_matches(&desc1, &descn, 150);
 			amount_read += 1;
-			println!("Dataset index {}", idx);
-
-			//-- Draw the matches (TODO: Remove)
-			let mut drawn_matches = core::Mat::default().unwrap();
-			let color = core::Scalar::new(10_f64,10f64,255f64,1f64);
-			let match_color = core::Scalar::new(10f64, 255f64, 10f64, 1f64);
-			let mask = opencv::types::VectorOfi8::new();
-			let flag = opencv::features2d::DrawMatchesFlags::DEFAULT;
-			let _x = opencv::features2d::draw_matches(&first_image, &kps1, &left, &kpsn, &matches, &mut drawn_matches,
-				match_color, color, &mask, flag);
-			highgui::named_window("MATCHES", highgui::WINDOW_GUI_NORMAL).unwrap();
-			let _x = highgui::imshow("MATCHES", &drawn_matches);
 
 			//-- 3: Compute pose of the current frame relative to first frame using the matched features
 			let (p1, pn) = point_pairs( &kps1, &kpsn, &matches ); 
@@ -183,9 +170,51 @@ impl VisualOdometer {
 		amount_read
 	}
 
+	
+	/// Steps through the visual odometry process using the new observation `img`
+	/// NB: `prev_img` is used for debugging so far and can be safely removed
+	pub fn step(&mut self, img: &core::Mat, prev_img: &core::Mat, step_idx: usize) {
+		// match points between the previous image and this image
+		let (cur_kps, cur_desc) = features::detect_features(img, features::Detector::SURF);
+		let prev_frame: Frame = self.frames[step_idx-1].clone(); //self.frames.last().unwrap().clone(); 
+		let prev_kps = prev_frame.points; 
+		let prev_desc = prev_frame.descriptors;
+		let matches = features::detect_matches(&prev_desc, &cur_desc, 150);
+		
+		//draw the matches
+		highgui::named_window("MATCHES", highgui::WINDOW_GUI_NORMAL).unwrap();
+		let x = draw_matches(prev_img, &prev_kps, img, &cur_kps, &matches);
+		let _x = highgui::imshow("MATCHES", &x.unwrap());
+
+		//eliminate outlier points from the matches
+		// let (prev_pts, cur_pts) = point_pairs(&prev_kps, &cur_kps, &matches);
+		// let (prev_pts, cur_pts) = geometry::filter_epipolar_inliers(&prev_pts, &cur_pts, self.camera_params.intrinsic());
+		
+		// Get the points from frame_{n-1} that are also in the current frame
+		let prevprev_frame = self.frames[step_idx-2].clone();
+		let prevprev_kps = prevprev_frame.points;
+		let prevprev_desc = prevprev_frame.descriptors;
+		// let matches_cur2prevprev = features::detect_matches(&prevprev_desc, &cur_desc, 150);
+		// let (prevprev_pts, _cur_pts) = point_pairs(&prevprev_kps, &cur_kps, &matches_cur2prevprev);
+		
+		let point_triplet = geometry::intersect((prevprev_kps, prevprev_desc), 
+				(prev_kps, prev_desc), (cur_kps, cur_desc), self.camera_params.intrinsic());
+
+
+		// determine the 3D points in the real world using `point_triplet`
+		
+	}
+
 	/// Returns the pose for every frame seen by the odometer
 	pub fn poses(&self) -> Vec<Pose> {
 		self.frames.iter().map(|frame| frame.pose).collect()
+	}
+
+	pub fn update_poses(&mut self, poses: &Vec<Pose>) {
+		assert_eq!(self.frames.len(), poses.len(), "Number of poses and frames have to be equal");
+		for i in 0..poses.len() {
+			self.frames[i].pose = poses[i];
+		}
 	}
 }
 
@@ -218,7 +247,7 @@ fn point_pairs(kp1: &KeyPoints, kp2: &KeyPoints, matches: &Matches) -> (Points, 
 }
 
 
-/// Computes the scale factor from `true_translations` and uses that to normalise
+/// Computes the scale factor from the translations magnitudes and uses that to normalise
 /// the poses
 pub fn normalise(poses: &Vec<Pose>, true_translations: &Vec<Matrix1x3>) -> Vec<Pose> {
 	// move the cameras to the origins
@@ -242,6 +271,16 @@ pub fn normalise(poses: &Vec<Pose>, true_translations: &Vec<Matrix1x3>) -> Vec<P
 	return updated_poses;
 }
 
+fn draw_matches(first_image: &core::Mat, kps1: &KeyPoints, second_image: &core::Mat, kps2: &KeyPoints, matches: &Matches) -> opencv::Result<core::Mat> {
+	let mut drawn_matches = core::Mat::default()?;
+	let color = core::Scalar::new(10_f64,10f64,255f64,1f64);
+	let match_color = core::Scalar::new(10f64, 255f64, 10f64, 1f64);
+	let mask = opencv::types::VectorOfi8::new();
+	let flag = opencv::features2d::DrawMatchesFlags::DEFAULT;
+	opencv::features2d::draw_matches(first_image, kps1, second_image, kps2, matches, &mut drawn_matches,
+		match_color, color, &mask, flag)?;
+	Ok(drawn_matches)
+}
 
 
 

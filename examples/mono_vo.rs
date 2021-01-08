@@ -3,9 +3,9 @@ extern crate opencv;
 extern crate nalgebra as na;
 extern crate rand;
 
-use ara_slam::{data::new_tsukuba, OdometryStatus, normalise};
+use ara_slam::{OdometryStatus, data::{MonocularDataLoader, new_tsukuba}, normalise};
 
-use opencv::{highgui, prelude::*};
+use opencv::{highgui};
 use na::{MatrixMN, U1, U3};
 
 type Matrix1x3 = MatrixMN<f64, U1, U3>;
@@ -23,6 +23,19 @@ fn main() -> opencv::Result<()>{
 	let odometer_poses = odometer.poses();
 	let gt_translations: Vec<Matrix1x3> = dataset.poses().into_iter().map(|p| *p.translation()).collect();
 	let updated_odometer_poses = normalise(&odometer_poses, &gt_translations);
+	odometer.update_poses(&updated_odometer_poses);
+	println!("Updated {} odometer poses", updated_odometer_poses.len());
+	
+	// Estimate the camera pose for the next 15 views
+	for idx in amount_read..(amount_read+15) {
+		println!("Step index {:}:", idx);
+		let image = dataset.read(idx);
+		let prev_image = dataset.read(idx-1);
+		odometer.step(&image, &prev_image,idx);
+		let _x = highgui::wait_key(20);
+	}
+	let amount_read = amount_read + 15;
+	println!("{}", amount_read);
 
 	loop {
 		if highgui::wait_key(10)? > 0 {
