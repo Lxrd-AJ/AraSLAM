@@ -201,7 +201,13 @@ impl VisualOdometer {
 				(prev_kps, prev_desc), (cur_kps, cur_desc), self.camera_params.intrinsic());
 
 
-		// determine the 3D points in the real world using `point_triplet`
+		// TODO: Determine the rotation and translation of the current view `img`. Using either
+		//	- 2D to 2D correspondences: geometry::relative_pose
+		//  - 3D to 2D correspondences:
+		//		- using `point_triplet` i can determine 3D points from p1 & p2 and use that to do 3D to 2D (p3)
+		
+		// TODO: determine the 3D points in the real world using `point_triplet`
+		//	- I can use [cv::sfm::triangulatePoints](https://docs.opencv.org/4.5.1/d0/dbd/group__triangulation.html#ga211c855276b3084f3bbd8b2d9161dc74)
 		
 	}
 
