@@ -5,9 +5,10 @@ use std::error::Error;
 use crate::{Pose, point_pairs};
 use crate::camera::Intrinsic;
 use crate::features::{detect_features, detect_matches};
-use opencv::{prelude::*,core, calib3d};
+use opencv::{prelude::*,core, calib3d, sfm};
 
 type Points = opencv::types::VectorOfPoint2f;
+type Points3D = opencv::types::VectorOfPoint3d;
 type KeyPoints = opencv::types::VectorOfKeyPoint;
 type Descriptor = core::Mat;
 type KeyPointDescriptors = (KeyPoints, Descriptor);
@@ -69,9 +70,11 @@ pub fn intersect(kpd1: KeyPointDescriptors, kpd2: KeyPointDescriptors, kpd3: Key
 
 	let pointpairs_1_2 = index_pairs(&m1_2);
 	let pointpairs_2_3 = index_pairs(&m2_3);
-
+	
 	let pointpairs_1_2 = filter_inliers(&pointpairs_1_2, &kp1, &kp2, &k);
+	println!("=> Inliers P1 to P2: {:} ", pointpairs_1_2.len());
 	let pointpairs_2_3 = filter_inliers(&pointpairs_2_3, &kp2, &kp3, &k);
+	println!("=> Inliers P2 to P3: {:} ", pointpairs_2_3.len());
 	let point_triplet = filter_index_pairs(&pointpairs_1_2, &pointpairs_2_3);
 	
 	let p1: Points = point_triplet.iter().map(|t| kp1.to_vec()[t.0 as usize].pt).collect();
@@ -81,6 +84,27 @@ pub fn intersect(kpd1: KeyPointDescriptors, kpd2: KeyPointDescriptors, kpd3: Key
 	(p1, p2, p3)
 }
 
+/// returns the 3D position of the 2D points in `p1` and `p2`
+/// Done using [cv::sfm::triangulatePoints](https://docs.opencv.org/4.5.1/d0/dbd/group__triangulation.html#ga211c855276b3084f3bbd8b2d9161dc74)
+pub fn triangulate(p1: &Points, p2: &Points, pose1: &Pose, pose2: &Pose, k: &Intrinsic) -> Points3D {
+	let mut points2d = opencv::types::VectorOfVectorOfPoint2f::new();
+	points2d.push(p1.clone());
+	points2d.push(p2.clone());
+
+	let mut projection_matrices = opencv::types::VectorOfMat::new();
+	let mut proj1 = core::Mat::default().unwrap();
+	let _x = sfm::projection_from_k_rt(&k.cv_mat_k(), &pose1.r_asmat(), &pose1.t_asmat(), &mut proj1);
+	let mut proj2 = core::Mat::default().unwrap();
+	let _x = sfm::projection_from_k_rt(&k.cv_mat_k(), &pose2.r_asmat(), &pose2.t_asmat(), &mut proj2);
+	projection_matrices.push(proj1);
+	projection_matrices.push(proj2);
+
+	let mut points3d = Points3D::new();
+	let _x = sfm::triangulate_points(&points2d, &projection_matrices, &mut points3d);
+
+	return points3d;
+}
+
 fn filter_inliers(pair: &Vec<(i32,i32)>, kp1: &KeyPoints, kp2: &KeyPoints, k: &Intrinsic) -> Vec<(i32,i32)>{
 	let p1: Points = pair.iter().map(|p| kp1.to_vec()[p.0 as usize].pt).collect();
 	let p2: Points = pair.iter().map(|p| kp2.to_vec()[p.1 as usize].pt).collect();
@@ -88,16 +112,32 @@ fn filter_inliers(pair: &Vec<(i32,i32)>, kp1: &KeyPoints, kp2: &KeyPoints, k: &I
 	let mut inliers = core::Mat::default().unwrap();
 	let essential = calib3d::find_essential_mat_matrix(
 			&p1, &p2, &k.cv_mat_k(), 
-			opencv::calib3d::RANSAC, 0.99, 1.0, 
+			opencv::calib3d::RANSAC, 0.99, 2.0, 
 			&mut inliers
 		).unwrap();
 	
 	let mut rotation = core::Mat::default().unwrap(); //3x3 matrix
 	let mut translation = core::Mat::default().unwrap(); //1x3 matrix
-	let _x = calib3d::recover_pose_camera(&essential, &p1, &p2, &k.cv_mat_k(), 
-	&mut rotation, &mut translation, &mut inliers);
+	let num_inliers = calib3d::recover_pose_camera(&essential, &p1, &p2, &k.cv_mat_k(), 
+	&mut rotation, &mut translation, &mut inliers).unwrap();
 
 	assert_eq!(inliers.rows() as usize, pair.len(), "The number of index pairs and inliers must match");
+	println!("*********\nNum inliers: {:}", num_inliers);
+	// println!("Calibration data:\n{:}", k.internal_camera);
+	// let mat = k.cv_mat_k();
+	// fn print(mat: &core::Mat){
+	// 	for row in 0..mat.rows() {
+	// 		print!("| ");
+	// 		for col in 0..mat.cols() {
+	// 			print!("{:}\t", *mat.at_2d::<f64>(row, col).unwrap());
+	// 		}
+	// 		println!("|");
+	// 	}
+	// }
+	// println!("Intrinsic matrix");
+	// print(&mat);
+	// println!("");
+	// print(&translation);
 	
 	let mut result: Vec<(i32,i32)> = Vec::new();
 

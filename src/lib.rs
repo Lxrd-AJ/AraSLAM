@@ -8,7 +8,8 @@ use opencv::{
 	prelude::*,
 	core,
 	highgui,
-	videoio
+	videoio,
+	imgproc
 };
 use na::{MatrixMN, U1, U3};
 use itertools::izip;
@@ -84,6 +85,34 @@ impl Pose {
 		&self.rotation
 	}
 
+	pub fn r_asmat(&self) -> core::Mat {
+		let mut r: core::Mat = core::Mat::zeros(3, 3, f64::typ()).unwrap().to_mat().unwrap();
+
+		*r.at_2d_mut::<f64>(0,0).unwrap() = self.rotation[(0,0)];
+		*r.at_2d_mut::<f64>(0,1).unwrap() = self.rotation[(0,1)];
+		*r.at_2d_mut::<f64>(0,2).unwrap() = self.rotation[(0,2)];
+
+		*r.at_2d_mut::<f64>(1,0).unwrap() = self.rotation[(1,0)];
+		*r.at_2d_mut::<f64>(1,1).unwrap() = self.rotation[(1,1)];
+		*r.at_2d_mut::<f64>(1,2).unwrap() = self.rotation[(1,2)];
+		
+		*r.at_2d_mut::<f64>(2,0).unwrap() = self.rotation[(2,0)];
+		*r.at_2d_mut::<f64>(2,1).unwrap() = self.rotation[(2,1)];
+		*r.at_2d_mut::<f64>(2,2).unwrap() = self.rotation[(2,2)];
+
+		r
+	}
+
+	pub fn t_asmat(&self) -> core::Mat {
+		let mut t: core::Mat = core::Mat::zeros(3, 1, f64::typ()).unwrap().to_mat().unwrap();
+
+		*t.at_2d_mut::<f64>(0, 0).unwrap() = self.translation[(0,0)];
+		*t.at_2d_mut::<f64>(1, 0).unwrap() = self.translation[(0,1)];
+		*t.at_2d_mut::<f64>(2, 0).unwrap() = self.translation[(0,2)];
+
+		t
+	}
+
 	pub fn translation(&self) -> &Matrix1x3 {
 		&self.translation
 	}
@@ -114,13 +143,13 @@ pub struct VisualOdometer {
 
 impl VisualOdometer {
 
-	pub fn new() -> VisualOdometer {
+	pub fn new(params: camera::Camera) -> VisualOdometer {
 		VisualOdometer {
 			frames: Vec::new(),
 			connections: HashMap::new(),
 			status: OdometryStatus::Limbo,
 			reference_frame: core::Mat::default().unwrap(),
-			camera_params: camera::Camera::new(),
+			camera_params: params,
 			camera_tracks: Vec::new()
 		}
 	}
@@ -174,40 +203,42 @@ impl VisualOdometer {
 	/// Steps through the visual odometry process using the new observation `img`
 	/// NB: `prev_img` is used for debugging so far and can be safely removed
 	pub fn step(&mut self, img: &core::Mat, prev_img: &core::Mat, step_idx: usize) {
-		// match points between the previous image and this image
+		// Get keypoints from current frame_n
 		let (cur_kps, cur_desc) = features::detect_features(img, features::Detector::SURF);
+		
+		// Get keypoints from current frame_n-1
 		let prev_frame: Frame = self.frames[step_idx-1].clone(); //self.frames.last().unwrap().clone(); 
 		let prev_kps = prev_frame.points; 
 		let prev_desc = prev_frame.descriptors;
-		let matches = features::detect_matches(&prev_desc, &cur_desc, 150);
+		let pose_n1 = prev_frame.pose;
 		
-		//draw the matches
-		highgui::named_window("MATCHES", highgui::WINDOW_GUI_NORMAL).unwrap();
-		let x = draw_matches(prev_img, &prev_kps, img, &cur_kps, &matches);
-		let _x = highgui::imshow("MATCHES", &x.unwrap());
-
-		//eliminate outlier points from the matches
-		// let (prev_pts, cur_pts) = point_pairs(&prev_kps, &cur_kps, &matches);
-		// let (prev_pts, cur_pts) = geometry::filter_epipolar_inliers(&prev_pts, &cur_pts, self.camera_params.intrinsic());
-		
-		// Get the points from frame_{n-1} that are also in the current frame
+		// Get the points from frame_{n-2} that are also in the current frame
 		let prevprev_frame = self.frames[step_idx-2].clone();
 		let prevprev_kps = prevprev_frame.points;
 		let prevprev_desc = prevprev_frame.descriptors;
-		// let matches_cur2prevprev = features::detect_matches(&prevprev_desc, &cur_desc, 150);
-		// let (prevprev_pts, _cur_pts) = point_pairs(&prevprev_kps, &cur_kps, &matches_cur2prevprev);
+		let pose_n2 = prevprev_frame.pose;
 		
+		// points common to the last 3 frames
 		let point_triplet = geometry::intersect((prevprev_kps, prevprev_desc), 
 				(prev_kps, prev_desc), (cur_kps, cur_desc), self.camera_params.intrinsic());
+		println!("\tIntersected {:} points from the last 3 frames", point_triplet.1.len());
+		// The 3D points that are in the previous 2 views
+		let points3d = geometry::triangulate(
+				&point_triplet.0, &point_triplet.1, &pose_n2, 
+				&pose_n1, &self.camera_params.intrinsic());
+		println!("\tFound {:} points in 3D", points3d.len());
+		for pt in points3d {
+			println!("{:?}", pt);
+		}
+		unimplemented!();
 
 
 		// TODO: Determine the rotation and translation of the current view `img`. Using either
 		//	- 2D to 2D correspondences: geometry::relative_pose
 		//  - 3D to 2D correspondences:
 		//		- using `point_triplet` i can determine 3D points from p1 & p2 and use that to do 3D to 2D (p3)
+		//		- https://docs.opencv.org/4.5.1/d9/d0c/group__calib3d.html#gae5af86788e99948d40b39a03f6acf623
 		
-		// TODO: determine the 3D points in the real world using `point_triplet`
-		//	- I can use [cv::sfm::triangulatePoints](https://docs.opencv.org/4.5.1/d0/dbd/group__triangulation.html#ga211c855276b3084f3bbd8b2d9161dc74)
 		
 	}
 

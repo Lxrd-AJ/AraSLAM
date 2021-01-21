@@ -15,7 +15,7 @@ fn main() -> opencv::Result<()>{
 	let dataset_url = String::from("./datasets/NewTsukubaStereoDataset");
 	let mut dataset = new_tsukuba::NewTsukubaDataset::new(&dataset_url, new_tsukuba::Lighting::Daylight);
 	
-	let mut odometer = ara_slam::VisualOdometer::new();
+	let mut odometer = ara_slam::VisualOdometer::new(dataset.camera_params());
 	let amount_read = odometer.initialise(&mut dataset);
 	assert_eq!(odometer.status, OdometryStatus::Initialised, "The odometer is not initialised");
 	println!("Initialised odometry from the first {} frames", amount_read);
